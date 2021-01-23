@@ -283,11 +283,10 @@ where
     ///     a.mean_axis(Axis(0)).unwrap().mean_axis(Axis(0)).unwrap() == aview0(&3.5)
     /// );
     /// ```
-    pub fn mean_axis(&self, axis: Axis) -> Option<Array<A, <D::Smaller as BroadcastShape<Ix0>>::BroadcastOutput>>
+    pub fn mean_axis(&self, axis: Axis) -> Option<Array<A, D::Smaller>>
     where
         A: Clone + Zero + FromPrimitive + Add<Output = A> + Div<Output = A>,
         D: RemoveAxis,
-        D::Smaller: BroadcastShape<Ix0>,
     {
         let axis_length = self.len_of(axis);
         if axis_length == 0 {

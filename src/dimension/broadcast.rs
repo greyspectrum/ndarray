@@ -41,7 +41,7 @@ where
     Ok(out)
 }
 
-pub trait BroadcastShape<Other: Dimension>: Dimension {
+pub trait BroadcastShape<Other: Dimension> {
     /// The resulting dimension type after broadcasting.
     type BroadcastOutput: Dimension;
 
@@ -52,7 +52,8 @@ pub trait BroadcastShape<Other: Dimension>: Dimension {
     /// Uses the [NumPy broadcasting rules]
     /// (https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html#general-broadcasting-rules).
     fn broadcast_shape(&self, other: &Other) -> Result<Self::BroadcastOutput, ShapeError> {
-        broadcast_shape::<Self, Other, Self::BroadcastOutput>(self, other)
+        panic!()
+        //broadcast_shape::<Self, Other, Self::BroadcastOutput>(self, other)
     }
 }
 

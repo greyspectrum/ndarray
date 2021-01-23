@@ -20,6 +20,7 @@ use crate::IntoDimension;
 use crate::RemoveAxis;
 use crate::{ArrayView1, ArrayViewMut1};
 use crate::{Dim, Ix, Ix0, Ix1, Ix2, Ix3, Ix4, Ix5, Ix6, IxDyn, IxDynImpl, Ixs, SliceOrIndex};
+use crate::dimension::broadcast::BroadcastShape;
 
 /// Array shape and index trait.
 ///
@@ -46,6 +47,8 @@ pub trait Dimension:
     + MulAssign
     + for<'x> MulAssign<&'x Self>
     + MulAssign<usize>
+    + BroadcastShape<Self, BroadcastOutput=Self>
+    + BroadcastShape<Ix0, BroadcastOutput=Self>
 {
     /// For fixed-size dimension representations (e.g. `Ix2`), this should be
     /// `Some(ndim)`, and for variable-size dimension representations (e.g.

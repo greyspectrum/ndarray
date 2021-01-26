@@ -9,14 +9,12 @@
 //! The data (inner representation) traits for ndarray
 
 use rawpointer::PointerExt;
-use std::mem::{self, size_of};
+use std::mem::{self, size_of, MaybeUninit};
 use std::ptr::NonNull;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
-use crate::{
-    ArrayBase, CowRepr, Dimension, OwnedArcRepr, OwnedRepr, RawViewRepr, ViewRepr,
-};
+use crate::{ArrayBase, CowRepr, Dimension, OwnedArcRepr, OwnedRepr, RawViewRepr, ViewRepr};
 
 /// Array representation trait.
 ///
@@ -401,6 +399,7 @@ unsafe impl<'a, A> DataMut for ViewRepr<&'a mut A> {}
 ///
 /// ***Internal trait, see `Data`.***
 pub unsafe trait DataOwned: Data {
+
     #[doc(hidden)]
     fn new(elements: Vec<Self::Elem>) -> Self;
 
@@ -424,6 +423,7 @@ unsafe impl<A> DataOwned for OwnedRepr<A> {
     fn new(elements: Vec<A>) -> Self {
         OwnedRepr::from(elements)
     }
+
     fn into_shared(self) -> OwnedArcRepr<A> {
         OwnedArcRepr(Arc::new(self))
     }
@@ -604,4 +604,23 @@ impl<'a, A: 'a, B: 'a> RawDataSubst<B> for ViewRepr<&'a mut A> {
     unsafe fn data_subst(self) -> Self::Output {
         ViewRepr::new()
     }
+}
+
+/// Array representation trait.
+///
+/// The MaybeUninitSubst trait maps the MaybeUninit type of element, while
+/// mapping the MaybeUninit type back to origin element type.
+///
+/// For example, `MaybeUninitSubst` can map the type `OwnedRepr<A>` to `OwnedRepr<MaybeUninit<A>>`,
+/// and use `Output as RawDataSubst` to map `OwnedRepr<MaybeUninit<A>>` back to `OwnedRepr<A>`.
+pub trait MaybeUninitSubst<A>: DataOwned<Elem = A> {
+    type Output: DataOwned<Elem = MaybeUninit<A>> + RawDataSubst<A, Output=Self, Elem = MaybeUninit<A>>;
+}
+
+impl<A> MaybeUninitSubst<A> for OwnedRepr<A> {
+    type Output = OwnedRepr<MaybeUninit<A>>;
+}
+
+impl<A> MaybeUninitSubst<A> for OwnedArcRepr<A> {
+    type Output = OwnedArcRepr<MaybeUninit<A>>;
 }

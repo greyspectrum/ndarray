@@ -19,6 +19,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::dimension;
+use crate::data_traits::RawDataSubst;
 use crate::dimension::offset_from_ptr_to_memory;
 use crate::error::{self, ShapeError};
 use crate::extension::nonnull::nonnull_from_vec_data;
@@ -512,13 +513,7 @@ where
         v.set_len(size);
         Self::from_shape_vec_unchecked(shape, v)
     }
-}
 
-impl<S, A, D> ArrayBase<S, D>
-where
-    S: DataOwned<Elem = MaybeUninit<A>>,
-    D: Dimension,
-{
     /// Create an array with uninitalized elements, shape `shape`.
     ///
     /// The uninitialized elements of type `A` are represented by the type `MaybeUninit<A>`,
@@ -580,7 +575,7 @@ where
     ///
     /// # shift_by_two(&Array2::zeros((8, 8)));
     /// ```
-    pub fn maybe_uninit<Sh>(shape: Sh) -> Self
+    pub fn maybe_uninit<Sh>(shape: Sh) -> ArrayBase<S::MaybeUninit, D>
     where
         Sh: ShapeBuilder<Dim = D>,
     {
@@ -589,7 +584,7 @@ where
             let size = size_of_shape_checked_unwrap!(&shape.dim);
             let mut v = Vec::with_capacity(size);
             v.set_len(size);
-            Self::from_shape_vec_unchecked(shape, v)
+            ArrayBase::from_shape_vec_unchecked(shape, v)
         }
     }
 }

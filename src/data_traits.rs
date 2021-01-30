@@ -418,6 +418,31 @@ pub unsafe trait DataOwned: Data
     fn into_shared(self) -> OwnedArcRepr<Self::Elem>;
 }
 
+use crate::Ix0;
+
+impl<S, D> ArrayBase<S, D>
+where
+    S: DataOwned
+{
+    pub(crate) fn from_data(data: S) -> ArrayBase<S, Ix0> {
+        ArrayBase {
+            ptr: data.begin_ptr(),
+            data,
+            dim: Ix0(),
+            strides: Ix0(),
+        }
+    }
+
+    pub(crate) unsafe fn with_strides_dim<E>(self, strides: E, dim: E) -> ArrayBase<S, E> {
+        ArrayBase {
+            data: self.data,
+            ptr: self.ptr,
+            dim: dim,
+            strides: strides,
+        }
+    }
+}
+
 /// Array representation trait.
 ///
 /// A representation that is a lightweight view.

@@ -643,22 +643,3 @@ impl<'a, A: 'a, B: 'a> RawDataSubst<B> for ViewRepr<&'a mut A> {
         ViewRepr::new()
     }
 }
-
-/// Array representation trait.
-///
-/// The MaybeUninitSubst trait maps the MaybeUninit type of element, while
-/// mapping the MaybeUninit type back to origin element type.
-///
-/// For example, `MaybeUninitSubst` can map the type `OwnedRepr<A>` to `OwnedRepr<MaybeUninit<A>>`,
-/// and use `Output as RawDataSubst` to map `OwnedRepr<MaybeUninit<A>>` back to `OwnedRepr<A>`.
-pub trait MaybeUninitSubst<A>: DataOwned<Elem = A> {
-    type Output: DataOwned<Elem = MaybeUninit<A>> + RawDataSubst<A, Output=Self, Elem = MaybeUninit<A>>;
-}
-
-impl<A> MaybeUninitSubst<A> for OwnedRepr<A> {
-    type Output = OwnedRepr<MaybeUninit<A>>;
-}
-
-impl<A> MaybeUninitSubst<A> for OwnedArcRepr<A> {
-    type Output = OwnedArcRepr<MaybeUninit<A>>;
-}

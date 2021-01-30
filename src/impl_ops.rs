@@ -7,7 +7,6 @@
 // except according to those terms.
 
 use crate::dimension::BroadcastShape;
-use crate::data_traits::MaybeUninitSubst;
 use crate::Zip;
 use num_complex::Complex;
 
@@ -68,8 +67,8 @@ impl<A, B, S, S2, D, E> $trt<ArrayBase<S2, E>> for ArrayBase<S, D>
 where
     A: Clone + $trt<B, Output=A>,
     B: Clone,
-    S: DataOwned<Elem=A> + DataMut + MaybeUninitSubst<A>,
-    <S as MaybeUninitSubst<A>>::Output: DataMut,
+    S: DataOwned<Elem=A> + DataMut,
+    S::MaybeUninit: DataMut,
     S2: Data<Elem=B>,
     D: Dimension + BroadcastShape<E>,
     E: Dimension,
@@ -96,8 +95,7 @@ impl<'a, A, B, S, S2, D, E> $trt<&'a ArrayBase<S2, E>> for ArrayBase<S, D>
 where
     A: Clone + $trt<B, Output=A>,
     B: Clone,
-    S: DataOwned<Elem=A> + DataMut + MaybeUninitSubst<A>,
-    <S as MaybeUninitSubst<A>>::Output: DataMut,
+    S: DataOwned<Elem=A> + DataMut,
     S2: Data<Elem=B>,
     D: Dimension + BroadcastShape<E>,
     E: Dimension,
@@ -105,29 +103,15 @@ where
     type Output = ArrayBase<S, <D as BroadcastShape<E>>::Output>;
     fn $mth(self, rhs: &ArrayBase<S2, E>) -> Self::Output
     {
-        let shape = self.dim.broadcast_shape(&rhs.dim).unwrap();
-        if shape.slice() == self.dim.slice() {
+        if self.ndim() == rhs.ndim() && self.shape() == rhs.shape() {
             let mut out = self.into_dimensionality::<<D as BroadcastShape<E>>::Output>().unwrap();
-            out.zip_mut_with(rhs, |x, y| {
-                *x = x.clone() $operator y.clone();
-            });
+            out.zip_mut_with_same_shape(rhs, clone_iopf(A::$mth));
             out
         } else {
+            let shape = self.dim.broadcast_shape(&rhs.dim).unwrap();
             let lhs = self.broadcast(shape.clone()).unwrap();
-            let rhs = rhs.broadcast(shape.clone()).unwrap();
-            // SAFETY: Overwrite all the elements in the array after
-            // it is created via `raw_view_mut`.
-            unsafe {
-                let mut out =ArrayBase::<<S as MaybeUninitSubst<A>>::Output, <D as BroadcastShape<E>>::Output>::maybe_uninit(shape.into_pattern());
-                let output_view = out.raw_view_mut().cast::<A>();
-                Zip::from(&lhs).and(&rhs)
-                    .and(output_view)
-                    .collect_with_partial(|x, y| {
-                        x.clone() $operator y.clone()
-                    })
-                    .release_ownership();
-                out.assume_init()
-            }
+            let rhs = rhs.broadcast(shape).unwrap();
+            Zip::from(&lhs).and(&rhs).map_collect_owned(clone_opf(A::$mth))
         }
     }
 }
@@ -148,8 +132,8 @@ where
     A: Clone + $trt<B, Output=B>,
     B: Clone,
     S: Data<Elem=A>,
-    S2: DataOwned<Elem=B> + DataMut + MaybeUninitSubst<B>,
-    <S2 as MaybeUninitSubst<B>>::Output: DataMut,
+    S2: DataOwned<Elem=B> + DataMut,
+    S2::MaybeUninit: DataMut,
     D: Dimension,
     E: Dimension + BroadcastShape<D>,
 {
@@ -170,7 +154,7 @@ where
             // SAFETY: Overwrite all the elements in the array after
             // it is created via `raw_view_mut`.
             unsafe {
-                let mut out =ArrayBase::<<S2 as MaybeUninitSubst<B>>::Output, <E as BroadcastShape<D>>::Output>::maybe_uninit(shape.into_pattern());
+                let mut out = ArrayBase::<S2, <E as BroadcastShape<D>>::Output>::maybe_uninit(shape.into_pattern());
                 let output_view = out.raw_view_mut().cast::<B>();
                 Zip::from(&lhs).and(&rhs)
                     .and(output_view)
@@ -312,6 +296,15 @@ mod arithmetic_ops {
 
     use num_complex::Complex;
     use std::ops::*;
+
+    fn clone_opf<A: Clone, B: Clone, C>(f: impl Fn(A, B) -> C) -> impl FnMut(&A, &B) -> C {
+        move |x, y| f(x.clone(), y.clone())
+    }
+
+    fn clone_iopf<A: Clone, B: Clone>(f: impl Fn(A, B) -> A) -> impl FnMut(&mut A, &B) {
+        move |x, y| *x = f(x.clone(), y.clone())
+    }
+
 
     impl_binary_op!(Add, +, add, +=, "addition");
     impl_binary_op!(Sub, -, sub, -=, "subtraction");

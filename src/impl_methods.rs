@@ -1788,6 +1788,18 @@ where
     }
 
     /// Rotate an array by 90 degrees in the plane specified by axes.
+    /// Rotation direction is from the first towards the second axis.
+    ///
+    /// Parameters
+    /// ----------
+    /// m : array_like
+    ///     Array of two or more dimensions.
+    /// k : integer
+    ///     Number of times the array is rotated by 90 degrees.
+    /// axes: (2,) array_like
+    ///     The array is rotated in the plane defined by the axes.
+    ///     Axes must be different.
+
     pub fn rot90(arr: &mut ArrayBase<S, Ix2>)
     where
         S: RawData,

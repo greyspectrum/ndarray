@@ -1787,6 +1787,15 @@ where
         self.strides.slice_mut().swap(ax, bx);
     }
 
+    /// Rotate an array by 90 degrees in the plane specified by axes.
+    pub fn rot90(arr: &mut ArrayBase<S, Ix2>)
+    where
+        S: RawData,
+    {
+        arr.swap_axes(0, 1);
+        arr.invert_axis(Axis(0));
+    }
+
     /// Permute the axes.
     ///
     /// This does not move any data, it just adjusts the array’s dimensions

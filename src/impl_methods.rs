@@ -1800,9 +1800,9 @@ where
     ///     The array is rotated in the plane defined by the axes.
     ///     Axes must be different.
 
-    pub fn rot90(arr: &mut ArrayBase<S, Ix2>)
+    pub fn rot90<N>(arr: &mut ArrayBase<S, D>)
     where
-        S: RawData,
+        N: RawData,
     {
         arr.swap_axes(0, 1);
         arr.invert_axis(Axis(0));
